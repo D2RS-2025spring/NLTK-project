@@ -186,11 +186,296 @@ CSS_STYLE = '''
 //岳璐璐
 
 //顾瑞莹
+/* 2. 卡片设计增强 */
+.card {
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(67, 97, 238, 0.1);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1.5rem 2rem;
+}
+
+/* 3. 按钮美化增强 */
+.btn-primary {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(30deg);
+    transition: all 0.6s ease;
+}
+
+.btn-primary:hover::after {
+    transform: translateX(100%) rotate(30deg);
+}
+
+/* 4. 输入框美化 */
+.form-control {
+    border: 1px solid #e0e7ff;
+    background: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.form-control:focus {
+    background: white;
+    box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15), inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* 5. 选项卡增强 */
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.8rem;
+}
+.nav-tabs .nav-link {
+    border-radius: 12px 12px 0 0;
+    padding: 14px 24px;
+    font-size: 1.05rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-tabs .nav-link::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 4px;
+    background: var(--primary-color);
+    transition: width 0.4s ease;
+}
+
+.nav-tabs .nav-link.active::before {
+    width: 100%;
+}
+
+/* 6. 词云容器美化 */
+.word-cloud-container {
+    background: linear-gradient(135deg, #f8f9ff 0%, #edf2ff 100%);
+    border-radius: 18px;
+    padding: 25px;
+    border: 1px solid rgba(67, 97, 238, 0.1);
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.03);
+    margin: 20px 0;
+}
+
+/* 7. 动画效果增强 */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.animate-float {
+    animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* 8. 结果卡片悬停效果 */
+.result-card {
+    transition: all 0.4s ease;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    height: 100%;
+}
+
+.result-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(67, 97, 238, 0.2);
+}
+
+/* 9. 情感标签美化 */
+.sentiment-tag {
+    padding: 8px 18px;
+    border-radius: 50px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.sentiment-positive {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.25) 100%);
+    color: #28a745;
+}
+
+.sentiment-negative {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.25) 100%);
+    color: #dc3545;
+}
+
+.sentiment-neutral {
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.15) 0%, rgba(108, 117, 125, 0.25) 100%);
+    color: #6c757d;
+}
+
+/* 10. 响应式优化 */
+@media (max-width: 992px) {
+    .stat-card .value {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        padding: 15px;
+        margin-top: 10px;
+    }
+    
+    .card-header {
+        padding: 1.2rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.3rem;
+    }
+    
+    .input-group-lg > .form-control {
+        border-radius: 50px;
+    }
+    
+    .btn-lg {
+        width: 100%;
+        margin-top: 10px;
+    }
+}
+</style>
+'''
 
 **/
 /**
 *第二部分代码请在这里粘贴
  //顾瑞莹
+def render_analysis_results(results, sentiment_icon):
+    """渲染分析结果的HTML模板"""
+    if not results:
+        return ''
+
+    # 处理错误情况
+    if 'error' in results:
+        return f'''
+            <div class="card">
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {results['error']}
+                    </div>
+                </div>
+            </div>
+        '''
+
+    # 基本分析结果
+    if results['type'] == 'url':
+        title_section = f'''
+            <div class="mb-4">
+                <h4 class="text-primary">
+                    <i class="fas fa-heading me-2"></i> 网页标题
+                </h4>
+                <p class="fs-5">{results['title']}</p>
+            </div>
+        '''
+    else:
+        title_section = ''
+
+    # 情感分析
+    sentiment = results['sentiment']
+    sentiment_badge = f'''
+        <span class="badge bg-{
+    'success' if sentiment == '积极' else
+    'danger' if sentiment == '消极' else 'secondary'
+    }">
+            {sentiment} 情感
+        </span>
+    '''
+
+    # 详细文本分析
+    text_analysis = results['text_analysis']
+    # 生成词云
+    word_cloud_html = ''.join([
+        f'<span class="word-item" data-count="{count}">{word} ({count})</span>'
+        for word, count in text_analysis['top_words']
+    ])
+
+    # 生成句子情感分析
+    sentence_sentiments_html = ''.join([
+        f'''
+        <div class="mb-3 p-3 bg-{
+        'success/10' if s['sentiment'] == '积极' else
+        'danger/10' if s['sentiment'] == '消极' else 'light'
+        } rounded">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-medium">句子情感: {s['sentiment']}</span>
+                {sentiment_icon.get(s['sentiment'], '')}
+            </div>
+            <p class="mt-2">{s['text']}</p>
+        </div>
+        '''
+        for s in text_analysis['sentence_sentiments'][:10]  # 只显示前10个句子
+    ])
+
+    # 优化后的词云展示部分
+    wordcloud_html = f'''
+       <div class="text-center mt-4 mb-5">
+           <div class="word-cloud-container animate__animated animate__fadeIn">
+               <h5 class="text-primary mb-4">
+                   <i class="fas fa-cloud me-2"></i> 词云分析
+                   <small class="text-muted d-block mt-1">点击词云可查看关键词详情</small>
+               </h5>
+               <div class="d-flex justify-content-center align-items-center" style="min-height: 350px;">
+                   <img src="data:image/png;base64,{results['text_analysis']['wordcloud_img']}" 
+                        class="img-fluid rounded shadow-lg animate-float"
+                        style="max-width: 85%; height: auto; cursor: pointer;"
+                        alt="文本分析词云图"
+                        onclick="showWordCloudModal()">
+               </div>
+               <div class="mt-4">
+                   {word_cloud_html}
+               </div>
+           </div>
+       </div>
+       '''
+
+    stat_cards = f'''
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="result-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary-soft rounded-circle p-3 d-inline-block mb-3">
+                            <i class="fas fa-font fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="text-primary mb-2">总字数</h5>
+                        <p class="display-4 fw-bold text-dark mb-0">{text_analysis['word_count']}</p>
+                        <p class="text-muted mb-0">字符</p>
+                    </div>
+                </div>
+            </div>
 
 //姚洁
            <div class="col-md-4">
