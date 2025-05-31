@@ -1,3 +1,28 @@
+# -*- coding: utf-8 -*-
+# @File  : news_analyzer.py
+# @Author: 马跃2024303110021
+# @Date  : 2025/01/03/21:15
+
+import requests
+from bs4 import BeautifulSoup
+import re
+import jieba
+import jieba.analyse
+from collections import Counter
+from flask import Flask, request, render_template_string, make_response
+from wordcloud import WordCloud
+import matplotlib
+matplotlib.use('Agg')  # 在导入pyplot之前设置
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+
+
+app = Flask(__name__)
+
+STOPWORDS_PATH = "/stopword.txt"#停用词位置
+EXTERNAL_SENTIMENT_DICT_PATH = '/emotion.txt'  # 词典路径
+
 
 //姚洁
 # 全局样式定义
@@ -546,6 +571,464 @@ CSS_STYLE = '''
 </style>
 '''
 
+# 文本预处理模块
+def clean_text(text):
+    """清洗文本，去除HTML标签和特殊字符"""
+    text = re.sub(r'<.*?>', '', text)  # 去除HTML标签
+    text = re.sub(r'[^\w\s]', '', text)  # 去除特殊字符
+    return text
+
+
+
+def segment_text(text):
+    """使用jieba进行中文分词"""
+    words = jieba.lcut(text)  # 分词
+    return words
+
+def load_stopwords(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            stopwords = set([line.strip() for line in f])
+        return stopwords
+    except FileNotFoundError:
+        print(f"警告：未找到停用词文件{file_path}，使用默认停用词")
+        return set(["的", "是", "在", "和", "等", "了", "有", "就", "不", "人", "都", "一",
+                   "一个", "上", "也", "很", "到", "说", "要", "去", "你", "会", "着", "没有",
+                   "看", "好", "自己", "这"])
+
+
+jieba_stopwords = load_stopwords(STOPWORDS_PATH)
+
+
+def remove_stopwords(words, stopwords):
+    """去除分词结果中的停用词"""
+    return [word for word in words if word not in jieba_stopwords]  # 过滤停用词
+
+
+# 摘要生成模块
+def generate_summary(text, word_count=5):
+    """使用jieba的TextRank算法生成摘要"""
+    if not text:
+        return []
+    summary = jieba.analyse.textrank(text, topK=word_count, withWeight=False, allowPOS=('ns', 'n', 'vn', 'v'))
+    return summary
+
+def load_external_sentiment_dict(dict_path):
+    """加载外部情感词典（格式：每行"词语 情感极性(1/0/-1)"）"""
+    sentiment_dict = {'积极': {}, '消极': {}, '中性': {}}
+    try:
+        with open(dict_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                word, score = line.split()
+                score = int(score)
+                if score > 0:
+                    sentiment_dict['积极'][word] = score
+                elif score < 0:
+                    sentiment_dict['消极'][word] = score
+                else:
+                    sentiment_dict['中性'][word] = score
+        return sentiment_dict
+    except FileNotFoundError:
+        print(f"警告：未找到情感词典文件{dict_path}，使用默认词典")
+        return sentiment_dict  # 使用默认词典
+    except Exception as e:
+        print(f"加载情感词典失败：{e}，使用默认词典")
+        return sentiment_dict  # 使用默认词典
+
+# 情感分析模块
+default_sentiment_dict = {
+    "积极": {"好": 1, "优秀": 1, "成功": 1, "进步": 1, "高兴": 1, "幸福": 1},
+    "消极": {"坏": -1, "失败": -1, "痛苦": -1, "困难": -1, "糟糕": -1, "悲伤": -1},
+    "中性": {"的": 0, "是": 0, "在": 0, "了": 0, "和": 0, "有": 0}
+}
+
+
+# 初始化时加载外部词典（示例路径，可改为你的实际路径）
+# 注意：需在全局作用域定义，确保Flask应用启动时加载
+custom_sentiment_dict = load_external_sentiment_dict(EXTERNAL_SENTIMENT_DICT_PATH)
+
+def sentiment_analysis(text, sentiment_dict):
+    """分析文本的情感倾向（支持外部词典）"""
+    if not text:
+        return "中性"
+
+    words = segment_text(text)
+    score = 0
+    for word in words:
+        # 先检查外部词典，再检查默认词典
+        for category, words_dict in sentiment_dict.items():
+            if word in words_dict:
+                score += words_dict[word]
+                break
+        else:
+            # 若外部词典和默认词典均无该词，跳过
+            continue
+
+    if score > 0:
+        return "积极"
+    elif score < 0:
+        return "消极"
+    else:
+        return "中性"
+
+# 合并外部词典和默认词典（外部词典优先级更高）
+def merge_sentiment_dicts(external_dict, default_dict):
+    """合并情感词典（外部词典覆盖默认词典同词）"""
+    merged_dict = {
+        '积极': {**default_dict['积极'], **external_dict['积极']},
+        '消极': {**default_dict['消极'], **external_dict['消极']},
+        '中性': {**default_dict['中性'], **external_dict['中性']}
+    }
+    return merged_dict
+
+# 加载并合并词典（在应用启动时执行）
+custom_sentiment_dict = load_external_sentiment_dict(EXTERNAL_SENTIMENT_DICT_PATH)
+merged_sentiment_dict = merge_sentiment_dicts(custom_sentiment_dict, default_sentiment_dict)
+
+
+# 新增词云生成函数
+def generate_wordcloud(word_freq):
+    wc = WordCloud(
+        font_path='C:/Windows/Fonts/msyh.ttc',
+        background_color='white',
+        width=800,
+        height=400,
+        max_words=200,
+        min_font_size=10,
+        max_font_size=150,
+        random_state=42
+    )
+    # 确保使用词频生成
+    wc.generate_from_frequencies(word_freq)
+
+    # 生成图片
+    img_buffer = BytesIO()
+    plt.figure(figsize=(10, 5))
+    plt.imshow(wc, interpolation='bilinear')
+    plt.axis("off")
+    plt.savefig(img_buffer, format='png', bbox_inches='tight', dpi=100)
+    img_buffer.seek(0)
+    img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+    plt.close()
+    return img_base64
+
+
+# 增强的文本分析功能
+def advanced_text_analysis(text):
+    """对文本进行多维度分析"""
+    if not text:
+        return {}
+
+    # 基本统计
+    sentences = re.split(r'[。！？!?]', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    words = segment_text(text)
+    filtered_words = remove_stopwords(words,
+                                      set(["的", "是", "在", "和", "等", "了", "有", "就", "不", "人", "都", "一",
+                                           "一个", "上", "也", "很", "到", "说", "要", "去", "你", "会", "着", "没有",
+                                           "看", "好", "自己", "这"]))
+
+    # 关键词提取
+    keywords = generate_summary(text, 10)
+
+    # 词频统计
+    word_freq = Counter(filtered_words)
+    top_words = word_freq.most_common(10)
+
+    # 句子情感分析
+    sentence_sentiments = []
+    for sentence in sentences:
+        if sentence:
+            sentiment = sentiment_analysis(sentence, merged_sentiment_dict)
+            sentence_sentiments.append({
+                'text': sentence,
+                'sentiment': sentiment
+            })
+
+
+    # 生成词云图
+    wordcloud_img = generate_wordcloud(word_freq)
+
+    return {
+        'word_count': len(words),
+        'sentence_count': len(sentences),
+        'filtered_word_count': len(filtered_words),
+        'keywords': keywords,
+        'top_words': top_words,
+        'sentence_sentiments': sentence_sentiments,
+        'wordcloud_img': wordcloud_img  # 新增词云图片数据
+    }
+
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    # 处理表单提交
+    analysis_type = request.form.get('analysis_type', 'url')
+    news_url = request.form.get('news_url', '')
+    custom_text = request.form.get('custom_text', '')
+
+    analysis_results = None
+    title = ""
+
+    if request.method == 'POST':
+        try:
+            if analysis_type == 'url' and news_url:
+                # 网页分析
+                title, content = fetch_news(news_url)
+                cleaned_content = clean_text(content)
+                summary = generate_summary(cleaned_content, 8)
+                sentiment = sentiment_analysis(cleaned_content, merged_sentiment_dict)
+                text_analysis = advanced_text_analysis(cleaned_content)
+
+                analysis_results = {
+                    'type': 'url',
+                    'title': title,
+                    'original_text': content[:1000] + ('...' if len(content) > 1000 else ''),
+                    'summary': summary,
+                    'sentiment': sentiment,
+                    'text_analysis': text_analysis
+                }
+
+            elif analysis_type == 'text' and custom_text:
+                # 文本分析
+                cleaned_text = clean_text(custom_text)
+                summary = generate_summary(cleaned_text, 5)
+                sentiment = sentiment_analysis(cleaned_text, merged_sentiment_dict)
+                text_analysis = advanced_text_analysis(cleaned_text)
+
+                analysis_results = {
+                    'type': 'text',
+                    'original_text': custom_text[:1000] + ('...' if len(custom_text) > 1000 else ''),
+                    'summary': summary,
+                    'sentiment': sentiment,
+                    'text_analysis': text_analysis
+                }
+
+        except Exception as e:
+            error_msg = f"分析过程中出错: {str(e)}"
+            analysis_results = {
+                'error': error_msg
+            }
+
+    # 生成带图标的情感标签
+    sentiment_icon = {
+        "积极": "<i class='fas fa-thumbs-up text-success'></i>",
+        "消极": "<i class='fas fa-thumbs-down text-danger'></i>",
+        "中性": "<i class='fas fa-minus text-muted'></i>"
+    }
+
+    return render_template_string(f'''
+        {CSS_STYLE}
+        <nav class="navbar navbar-expand-lg bg-primary shadow">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <i class="fas fa-text-height me-2"></i> 文本智能分析系统
+                </a>
+            </div>
+        </nav>
+
+        <div class="app-container py-5">
+            <!-- 分析表单 -->
+            <div class="card mb-5">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">文本分析工具</h3>
+                </div>
+
+                <div class="card-body">
+                    <!-- 分析类型选择 -->
+                    <div class="analysis-tabs">
+                        <ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link {'active' if analysis_type == 'url' else ''}" 
+                                        id="url-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#url-analysis" type="button" 
+                                        role="tab">
+                                    <i class="fas fa-link me-2"></i>网页分析
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link {'active' if analysis_type == 'text' else ''}" 
+                                        id="text-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#text-analysis" type="button" 
+                                        role="tab">
+                                    <i class="fas fa-file-alt me-2"></i>文本分析
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- 分析表单内容 -->
+                    <div class="tab-content" id="analysisTabsContent">
+                        <!-- URL分析表单 -->
+                        <div class="tab-pane fade {'show active' if analysis_type == 'url' else ''}" 
+                             id="url-analysis" role="tabpanel">
+                            <form method="post">
+                                <input type="hidden" name="analysis_type" value="url">
+                                <div class="input-group input-group-lg mb-3">
+                                    <input type="url" name="news_url" 
+                                           class="form-control rounded-pill" 
+                                           placeholder="请输入新闻链接（支持主流媒体网站）" 
+                                           value="{news_url}"
+                                           required>
+                                    <button type="submit" class="btn btn-primary rounded-pill ms-3">
+                                        分析网页 <i class="fas fa-search ms-2"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- 文本分析表单 -->
+                        <div class="tab-pane fade {'show active' if analysis_type == 'text' else ''}" 
+                             id="text-analysis" role="tabpanel">
+                            <form method="post">
+                                <input type="hidden" name="analysis_type" value="text">
+                                <div class="mb-3">
+                                    <textarea name="custom_text" rows="5" 
+                                              class="form-control" 
+                                              placeholder="请输入要分析的文本内容（支持句子、段落、文章等）"
+                                              required>{custom_text}</textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    分析文本 <i class="fas fa-text-height ms-2"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 在表单下方添加进度条 -->
+        <div id="progress-container" class="d-none mb-4">
+            <div class="progress" style="height: 30px;">
+                <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                     role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                    <span id="progress-text">准备中...</span>
+                </div>
+            </div>
+        </div>
+
+            <!-- 分析结果 -->
+            {render_analysis_results(analysis_results, sentiment_icon) if analysis_results else ''}
+        </div>
+        
+        
+        <script>
+            // 监听表单提交
+            document.querySelector('form').addEventListener('submit', function(e) {{
+                e.preventDefault();
+                const progressContainer = document.getElementById('progress-container');
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                
+                // 显示进度条
+                progressContainer.classList.remove('d-none');
+                
+                // 模拟进度更新（实际应用中应从服务器接收进度数据）
+                const steps = [
+                    {{ text: '正在发送请求', value: 20 }},
+                    {{ text: '正在解析网页', value: 40 }},
+                    {{ text: '正在提取内容', value: 60 }},
+                    {{ text: '正在分析情感', value: 80 }},
+                    {{ text: '正在生成结果', value: 95 }}
+                ];
+                
+                let stepIndex = 0;
+                const interval = setInterval(() => {{
+                    if (stepIndex >= steps.length) {{
+                        clearInterval(interval);
+                        return;
+                    }}
+
+                    const step = steps[stepIndex];
+                    progressBar.style.width = `${{step.value}}%`;
+                    progressBar.setAttribute('aria-valuenow', step.value);
+                    progressText.textContent = step.text;
+                    stepIndex++;
+                }}, 1000);
+
+                // 发送表单数据
+                const formData = new FormData(this);
+                fetch(this.action, {{
+                    method: this.method,
+                    body: formData
+                }})
+                .then(response => {{
+                    if (response.ok) {{
+                        return response.text();
+                    }}
+                    throw new Error('Network response was not ok');
+                }})
+                .then(data => {{
+                    // 完成进度
+                    progressBar.style.width = '100%';
+                    progressBar.setAttribute('aria-valuenow', '100');
+                    progressText.textContent = '分析完成！';
+
+                    // 显示结果
+                    setTimeout(() => {{
+                        document.open();
+                        document.write(data);
+                        document.close();
+                    }}, 500);
+                }})
+                .catch(error => {{
+                    console.error('Error:', error);
+                    progressText.textContent = '分析失败!';
+                }});
+            }});
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // 初始化选项卡（修正语法错误）
+            document.addEventListener('DOMContentLoaded', function() {{
+                var tabs = new bootstrap.Tab('#analysisTabs a[role="tab"]');
+            }});
+        </script>
+       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 初始化选项卡
+    document.addEventListener('DOMContentLoaded', function() {{
+        // 初始化Bootstrap标签页
+        var tabTriggers = [].slice.call(document.querySelectorAll('#analysisTabs button[data-bs-toggle="tab"]'));
+        tabTriggers.forEach(function (trigger) {{
+            new bootstrap.Tab(trigger);
+        }});
+
+        // 表单提交时显示加载状态
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {{
+            form.addEventListener('submit', function() {{
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) {{
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '处理中 <span class="loading-spinner"></span>';
+                    submitBtn.disabled = true;
+                    
+                    // 恢复按钮状态（在实际应用中应由页面刷新或AJAX回调处理）
+                    setTimeout(() => {{
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }}, 3000);
+                }}
+            }});
+        );
+
+        // 词云项点击事件
+        const wordItems = document.querySelectorAll('.word-item');
+        wordItems.forEach(item => {{
+            item.addEventListener('click', function() {{
+                const word = this.textContent.split(' ')[0];
+                alert(`已选择关键词: ${{word}}\n您可以根据此关键词进行进一步分析或搜索。`);
+            }});
+        }});
+    }});
+</script>
+    ''')
+
 
  //顾瑞莹
 def render_analysis_results(results, sentiment_icon):
@@ -859,3 +1342,61 @@ def render_analysis_results(results, sentiment_icon):
          }});
      </script>
      '''
+
+# 1. 新闻文本采集模块
+def fetch_news(url):
+    """从给定的URL获取新闻标题和内容（优化版，提取更完整文字）"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()  # 检查请求是否成功
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # ---------------------- 标题提取优化 ----------------------
+        title = "标题未找到"
+        title_tags = ['h1', 'h2', 'h3', 'title']  # 按优先级尝试提取标题
+        for tag in title_tags:
+            elem = soup.find(tag)
+            if elem and elem.text.strip():
+                title = elem.text.strip()
+                break  # 找到第一个有效标题即停止
+
+        # ---------------------- 内容提取优化 ----------------------
+        # 定义有效内容标签（按常见新闻结构优先级排序）
+        content_tags = ['article', 'body', 'main', 'div', 'p', 'span']
+        content = []
+
+        for tag in content_tags:
+            # 提取标签内非空文本，并过滤长度过短的内容（≥10字）
+            elements = soup.find_all(tag)
+            for elem in elements:
+                text = elem.get_text(strip=True)
+                if len(text) >= 10:  # 过滤极短文本（如导航、版权信息）
+                    content.append(text)
+
+        # 合并所有有效文本，按标签出现顺序拼接
+        cleaned_content = ' '.join(content).strip()
+
+        # 处理特殊情况：若内容仍为空，尝试提取所有可见文本
+        if not cleaned_content:
+            visible_text = soup.get_text(strip=True, separator=' ')
+            cleaned_content = re.sub(r'\s{2,}', ' ', visible_text)  # 压缩连续空白
+
+        # 最终内容校验
+        if len(cleaned_content) < 50:  # 若总长度过短，视为提取失败
+            cleaned_content = "内容未找到"
+
+        return title, cleaned_content
+
+    except requests.exceptions.RequestException as e:
+        print(f"请求URL出错: {e}")
+        return "获取失败", f"无法访问URL: {url}"
+    except Exception as e:
+        print(f"内容提取异常: {e}")
+        return "标题未找到", "内容提取失败"
+
+if __name__ == '__main__':
+    app.run(debug=True)
