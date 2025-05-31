@@ -703,42 +703,42 @@ custom_sentiment_dict = load_external_sentiment_dict(EXTERNAL_SENTIMENT_DICT_PAT
 merged_sentiment_dict = merge_sentiment_dicts(custom_sentiment_dict, default_sentiment_dict)
 
 
+import os
+import base64
+from io import BytesIO
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+import matplotlib.font_manager as fm
+
 def generate_wordcloud(word_freq):
-    # 定义字体优先级列表（项目内置字体 > 系统常见中文字体 > WordCloud默认）
-    preferred_fonts = [
-        # 1. 项目内置字体（优先使用，需将字体文件放在项目的fonts目录下）
-        os.path.join(os.path.dirname(__file__), 'fonts', 'msyh.ttc'),
-        
-        # 2. 系统常见中文字体（按Linux/macOS/Windows顺序）
-        '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',   # Linux 文泉驿正黑
-        '/System/Library/Fonts/STHeiti Light.ttc',        # macOS 华文黑体
-        'C:/Windows/Fonts/msyh.ttc',                     # Windows 微软雅黑
-        
-        # 3. 通用无衬线字体（英文 fallback）
-        'Source Han Sans',
-        'DejaVu Sans',
-        'Liberation Sans',
-        'Arial'
-    ]
+    # 指定项目内置字体路径（确保将中文字体文件放在项目目录下）
+    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'simhei.ttf')
     
-    # 检测可用字体
-    font_path = None
-    for font in preferred_fonts:
-        if os.path.exists(font):
-            # 验证字体是否可被Matplotlib识别
+    # 检查字体文件是否存在
+    if not os.path.exists(font_path):
+        print("警告：项目内置字体文件不存在，尝试使用系统字体...")
+        # 如果没有内置字体，尝试使用系统字体
+        system_fonts = [
+            'SimHei',       # Windows/Linux
+            'WenQuanYi Micro Hei',  # Linux
+            'Heiti TC',     # macOS
+        ]
+        
+        font_path = None
+        for font in system_fonts:
             try:
-                fm.FontProperties(fname=font)
-                font_path = font
-                print(f"成功加载字体: {font_path}")
-                break
+                # 检查系统是否有此字体
+                if font in [f.name for f in fm.fontManager.ttflist]:
+                    font_path = font
+                    print(f"成功加载系统字体: {font_path}")
+                    break
             except Exception as e:
-                print(f"字体 {font} 不可用: {str(e)}")
+                print(f"尝试加载系统字体 {font} 失败: {str(e)}")
                 continue
-    
-    # 若所有字体均失败，使用WordCloud默认字体（可能无法显示中文）
-    if not font_path:
-        print("警告：未找到合适字体，使用WordCloud默认字体（可能不支持中文）")
-        font_path = None  # WordCloud会尝试内部默认字体
+        
+        # 如果仍未找到字体，则使用WordCloud默认字体（可能无法显示中文）
+        if not font_path:
+            print("警告：未找到任何合适的中文字体，使用默认字体（可能无法显示中文）")
     
     # 生成词云
     wc = WordCloud(
@@ -766,60 +766,47 @@ def generate_wordcloud(word_freq):
     plt.close()
     
     return img_base64
+    
 def generate_bar_chart(word_freq, top_n=10):
     """生成词频统计柱状图"""
-    # 定义备选字体列表（按优先级排序）
-    preferred_fonts = ['Microsoft YaHei', 'SimHei', 'WenQuanYi Micro Hei', 'Heiti TC','Source Han Sans']
+    # 配置中文字体支持
+    plt.rcParams["font.family"] = ["SimHei", "WenQuanYi Micro Hei", 
+                                  "Heiti TC", "Microsoft YaHei", "sans-serif"]
+    plt.rcParams["axes.unicode_minus"] = False  # 确保负号正确显示
     
-    # 获取系统所有可用字体
-    available_fonts = {f.name for f in fm.fontManager.ttflist}
-    
-    # 查找第一个可用的字体
-    font_to_use = None
-    for font in preferred_fonts:
-        if font in available_fonts:
-            font_to_use = font
-            break
-    
-    # 若没有找到任何备选字体，使用默认无衬线字体
-    if not font_to_use:
-        print("No preferred fonts found, using default.")
-        plt.rcParams['font.family'] = ['sans-serif']
-    else:
-        plt.rcParams['font.family'] = font_to_use
-    
-    plt.rcParams['axes.unicode_minus'] = False
-
     # 提取前n个高频词
     top_words = word_freq.most_common(top_n)
+    if not top_words:
+        return None  # 处理空数据情况
+    
     words, counts = zip(*top_words)
-
+    
     # 创建图表
     plt.figure(figsize=(10, 5))
     bars = plt.barh(words, counts, color='#4361EE', edgecolor='white')
     plt.gca().invert_yaxis()  # 按词频降序排列
-
+    
     # 添加数据标签
     for bar in bars:
         width = bar.get_width()
-        plt.text(width + 5, bar.get_y() + bar.get_height() / 2,
-                 f'{width}',
-                 va='center')
-
+        plt.text(width * 1.01, bar.get_y() + bar.get_height()/2,
+                 f'{width}', va='center', fontsize=10)
+    
     # 图表美化
-    plt.xlabel('词频', fontsize=12, color='#2B2D42')
-    plt.ylabel('关键词', fontsize=12, color='#2B2D42')
-    plt.title('词频统计柱状图', fontsize=16, color='#2B2D42', pad=20)
+    plt.xlabel('词频', fontsize=12)
+    plt.ylabel('关键词', fontsize=12)
+    plt.title('词频统计柱状图', fontsize=16, pad=20)
     plt.grid(axis='x', linestyle='--', alpha=0.7)
-    plt.margins(x=0.02)
+    plt.margins(x=0.1)  # 调整边距
     plt.tight_layout()
-
+    
     # 保存为base64
     img_buffer = BytesIO()
     plt.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
     img_buffer.seek(0)
     img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
     plt.close()
+    
     return img_base64
 
 # 增强的文本分析功能
