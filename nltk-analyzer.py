@@ -702,47 +702,43 @@ custom_sentiment_dict = load_external_sentiment_dict(EXTERNAL_SENTIMENT_DICT_PAT
 merged_sentiment_dict = merge_sentiment_dicts(custom_sentiment_dict, default_sentiment_dict)
 
 
-# 新增词云生成函数
 def generate_wordcloud(word_freq):
-    # 优先使用项目内置字体
-    project_dir = os.path.dirname(os.path.abspath(__file__))
-    builtin_font = os.path.join(project_dir, 'fonts', 'msyh.ttc')
-    
-    # 可选字体列表 (按优先级)
-    possible_fonts = [
-        builtin_font,  # 1. 项目内置字体 (最高优先级)
-        '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf',  # 2. Linux 常见路径
-        '/Library/Fonts/Arial.ttf',  # 3. macOS 常见路径
-        'C:/Windows/Fonts/msyh.ttc'  # 4. Windows 路径 (最后尝试)
+    # 定义字体优先级列表（项目内置字体 > 系统常见中文字体 > WordCloud默认）
+    preferred_fonts = [
+        # 1. 项目内置字体（优先使用，需将字体文件放在项目的fonts目录下）
+        os.path.join(os.path.dirname(__file__), 'fonts', 'msyh.ttc'),
+        
+        # 2. 系统常见中文字体（按Linux/macOS/Windows顺序）
+        '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',   # Linux 文泉驿正黑
+        '/System/Library/Fonts/STHeiti Light.ttc',        # macOS 华文黑体
+        'C:/Windows/Fonts/msyh.ttc',                     # Windows 微软雅黑
+        
+        # 3. 通用无衬线字体（英文 fallback）
+        'DejaVu Sans',
+        'Liberation Sans',
+        'Arial'
     ]
     
-    # 检查可用字体
+    # 检测可用字体
     font_path = None
-    for font in possible_fonts:
+    for font in preferred_fonts:
         if os.path.exists(font):
-            font_path = font
-            print(f"Using font: {font_path}")
-            break
+            # 验证字体是否可被Matplotlib识别
+            try:
+                fm.FontProperties(fname=font)
+                font_path = font
+                print(f"成功加载字体: {font_path}")
+                break
+            except Exception as e:
+                print(f"字体 {font} 不可用: {str(e)}")
+                continue
     
-    # 如果没有找到任何字体，使用 None (让 wordcloud 尝试使用默认字体)
-    if font_path is None:
-        print("Warning: No suitable font found. Using WordCloud default font.")
-        try:
-            # 尝试使用指定字体（如本地开发环境中的微软雅黑）
-            font_path = os.path.join(os.path.dirname(__file__), 'fonts/msyh.ttc')
-            if os.path.exists(font_path):
-                font = fm.FontProperties(fname=font_path)
-                plt.rcParams['font.family'] = font.get_name()
-            else:
-                raise FileNotFoundError("Font file not found")
-                
-        except Exception as e:
-            # 字体缺失时，降级到内置字体
-            print(f"Font not found, falling back to default: {e}")
-            font_path = 'sans-serif'
+    # 若所有字体均失败，使用WordCloud默认字体（可能无法显示中文）
+    if not font_path:
+        print("警告：未找到合适字体，使用WordCloud默认字体（可能不支持中文）")
+        font_path = None  # WordCloud会尝试内部默认字体
     
-    
-    
+    # 生成词云
     wc = WordCloud(
         font_path=font_path,
         background_color='white',
@@ -751,40 +747,46 @@ def generate_wordcloud(word_freq):
         max_words=200,
         min_font_size=10,
         max_font_size=150,
-        random_state=42
+        random_state=42,
+        collocations=False  # 关闭重复词语（可选）
     )
-    
-    # 确保使用词频生成
     wc.generate_from_frequencies(word_freq)
-
-    # 生成图片
+    
+    # 渲染图片
     img_buffer = BytesIO()
     plt.figure(figsize=(10, 5))
     plt.imshow(wc, interpolation='bilinear')
     plt.axis("off")
+    plt.tight_layout(pad=0)  # 去除图片边缘空白
     plt.savefig(img_buffer, format='png', bbox_inches='tight', dpi=100)
     img_buffer.seek(0)
     img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
     plt.close()
+    
     return img_base64
-
 def generate_bar_chart(word_freq, top_n=10):
     """生成词频统计柱状图"""
-     try:
-        # 尝试使用指定字体（如本地开发环境中的微软雅黑）
-        font_path = os.path.join(os.path.dirname(__file__), 'fonts/msyh.ttc')
-        if os.path.exists(font_path):
-            font = fm.FontProperties(fname=font_path)
-            plt.rcParams['font.family'] = font.get_name()
-        else:
-            raise FileNotFoundError("Font file not found")
-            
-    except Exception as e:
-        # 字体缺失时，降级到内置字体
-        print(f"Font not found, falling back to default: {e}")
-        plt.rcParams['font.family'] = ['DejaVu Sans', 'sans-serif']
+    # 定义备选字体列表（按优先级排序）
+    preferred_fonts = ['Microsoft YaHei', 'SimHei', 'WenQuanYi Micro Hei', 'Heiti TC']
     
-    plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+    # 获取系统所有可用字体
+    available_fonts = {f.name for f in fm.fontManager.ttflist}
+    
+    # 查找第一个可用的字体
+    font_to_use = None
+    for font in preferred_fonts:
+        if font in available_fonts:
+            font_to_use = font
+            break
+    
+    # 若没有找到任何备选字体，使用默认无衬线字体
+    if not font_to_use:
+        print("No preferred fonts found, using default.")
+        plt.rcParams['font.family'] = ['sans-serif']
+    else:
+        plt.rcParams['font.family'] = font_to_use
+    
+    plt.rcParams['axes.unicode_minus'] = False
 
     # 提取前n个高频词
     top_words = word_freq.most_common(top_n)
