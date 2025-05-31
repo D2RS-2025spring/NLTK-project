@@ -15,7 +15,7 @@
 ## 项目架构
 ```
 NLTK-project/
-├── nltk-analyer                    # 核心代码模块
+├── nltk-analyer.py          # 核心代码模块
 ├── data/                    # 停用词以及知网HowNet情感词典
 └── fonts/                   # 字体
 ```
