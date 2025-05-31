@@ -124,4 +124,7 @@ pip install -r requirements.txt
 
 # 运行文本分析
 python main/news_analyzer.py
+```
+
+#### 本地部署默认网址: http://127.0.0.1:5000
 
