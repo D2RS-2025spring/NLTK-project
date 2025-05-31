@@ -15,10 +15,9 @@
 ## 项目架构
 ```
 NLTK-project/
-├── main/                    # 核心代码模块
+├── nltk-analyer                    # 核心代码模块
 ├── data/                    # 停用词以及知网HowNet情感词典
-├── docs/                   # 文档
-└── results/                # 结果
+└── fonts/                   # 字体
 ```
 ### 系统分层设计
 ```mermaid
