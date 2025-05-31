@@ -567,6 +567,20 @@ CSS_STYLE = '''
         width: 100%;
         margin-top: 10px;
     }
+    .img-fluid {
+        transition: transform 0.3s ease;
+    }
+    
+    .img-fluid:hover {
+        transform: scale(1.02);
+        box-shadow: 0 12px 30px rgba(67, 97, 238, 0.15);
+    }
+    
+    .card-body.text-center {
+        padding: 30px;
+        background: rgba(67, 97, 238, 0.03);
+        border-radius: 16px;
+    }    
 }
 </style>
 '''
@@ -715,6 +729,43 @@ def generate_wordcloud(word_freq):
     plt.close()
     return img_base64
 
+def generate_bar_chart(word_freq, top_n=10):
+    """生成词频统计柱状图"""
+    plt.rcParams['font.family'] = 'Microsoft YaHei'  # 微软雅黑（Windows）
+    # 或 plt.rcParams['font.sans-serif'] = ['SimHei']  # 黑体（推荐跨平台方案）
+    plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
+    # 提取前n个高频词
+    top_words = word_freq.most_common(top_n)
+    words, counts = zip(*top_words)
+
+    # 创建图表
+    plt.figure(figsize=(10, 5))
+    bars = plt.barh(words, counts, color='#4361EE', edgecolor='white')
+    plt.gca().invert_yaxis()  # 按词频降序排列
+
+    # 添加数据标签
+    for bar in bars:
+        width = bar.get_width()
+        plt.text(width + 5, bar.get_y() + bar.get_height() / 2,
+                 f'{width}',
+                 va='center')
+
+    # 图表美化
+    plt.xlabel('词频', fontsize=12, color='#2B2D42')
+    plt.ylabel('关键词', fontsize=12, color='#2B2D42')
+    plt.title('词频统计柱状图', fontsize=16, color='#2B2D42', pad=20)
+    plt.grid(axis='x', linestyle='--', alpha=0.7)
+    plt.margins(x=0.02)
+    plt.tight_layout()
+
+    # 保存为base64
+    img_buffer = BytesIO()
+    plt.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
+    img_buffer.seek(0)
+    img_base64 = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+    plt.close()
+    return img_base64
 
 # 增强的文本分析功能
 def advanced_text_analysis(text):
@@ -753,6 +804,9 @@ def advanced_text_analysis(text):
     # 生成词云图
     wordcloud_img = generate_wordcloud(word_freq)
 
+    # 生成词频表
+    bar_chart_img = generate_bar_chart(word_freq)
+
     return {
         'word_count': len(words),
         'sentence_count': len(sentences),
@@ -760,7 +814,8 @@ def advanced_text_analysis(text):
         'keywords': keywords,
         'top_words': top_words,
         'sentence_sentiments': sentence_sentiments,
-        'wordcloud_img': wordcloud_img  # 新增词云图片数据
+        'wordcloud_img': wordcloud_img,  # 新增词云图片数据
+        'bar_chart_img': bar_chart_img
     }
 
 
@@ -1211,6 +1266,12 @@ def render_analysis_results(results, sentiment_icon):
                              <i class="fas fa-smile me-2"></i>情感分析
                          </button>
                      </li>
+                     <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="bar-chart-tab" data-bs-toggle="tab" 
+                                data-bs-target="#bar-chart-content" type="button" role="tab">
+                            <i class="fas fa-chart-bar me-2"></i>词频柱状图
+                        </button>
+                    </li>
                  </ul>
 
                  <div class="tab-content mt-4" id="detailTabsContent">
@@ -1268,6 +1329,16 @@ def render_analysis_results(results, sentiment_icon):
                                  </div>
                              </div>
                          </div>
+                     </div>
+                     <div class="tab-pane fade" id="bar-chart-content" role="tabpanel">
+                        <div class="card border-0 shadow-sm mt-4">
+                            <div class="card-body text-center">
+                                <img src="data:image/png;base64,{ results['text_analysis']['bar_chart_img'] }" 
+                                     class="img-fluid rounded shadow-lg"
+                                     style="max-width: 100%; height: 400px;"
+                                     alt="词频统计柱状图">
+                            </div>
+                        </div>
                      </div>
                  </div>
              </div>
