@@ -1,6 +1,4 @@
-代码请粘贴到名字下方
-/**
-*第一部分代码请在这里粘贴
+
 //姚洁
 # 全局样式定义
 CSS_STYLE = '''
@@ -184,6 +182,184 @@ CSS_STYLE = '''
         transition: all 0.3s ease;
     }
 //岳璐璐
+    .result-item:hover {
+        background: rgba(67, 97, 238, 0.07);
+        transform: translateX(5px);
+    }
+
+    .analysis-section {
+        margin-top: 30px;
+        padding: 25px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+    }
+
+    .stat-card {
+        text-align: center;
+        padding: 20px 15px;
+        border-radius: 12px;
+        background: rgba(76, 201, 240, 0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(76, 201, 240, 0.2);
+    }
+
+    .stat-card h6 {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .stat-card .value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: var(--secondary-color);
+        line-height: 1.2;
+    }
+
+    .stat-card .unit {
+        font-size: 1rem;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+
+    /* 词云优化 */
+    .word-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 20px;
+        background: var(--bg-light);
+        border-radius: 16px;
+        justify-content: center;
+    }
+
+    .word-item {
+        padding: 8px 16px;
+        border-radius: 50px;
+        background: white;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .word-item:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+    }
+
+    /* 情感标签优化 */
+    .sentiment-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 15px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .sentiment-positive {
+        background: rgba(40, 167, 69, 0.15);
+        color: #28a745;
+    }
+
+    .sentiment-negative {
+        background: rgba(220, 53, 69, 0.15);
+        color: #dc3545;
+    }
+
+    .sentiment-neutral {
+        background: rgba(108, 117, 125, 0.15);
+        color: #6c757d;
+    }
+
+    /* 加载动画 */
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        vertical-align: middle;
+        margin-left: 10px;
+    }
+
+    /* 页脚 */
+    .footer {
+        text-align: center;
+        padding: 30px 0;
+        color: var(--text-light);
+        font-size: 0.9rem;
+        margin-top: 40px;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .app-container {
+            padding: 15px;
+        }
+        
+        .card-body {
+            padding: 1.2rem;
+        }
+        
+        .input-group-lg > .form-control {
+            border-radius: 50px;
+            margin-bottom: 10px;
+        }
+        
+        .input-group-lg > .btn {
+            border-radius: 50px;
+            width: 100%;
+        }
+    }
+    /* 在现有的 CSS_STYLE 中添加 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate__animated {
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+
+.animate__slower {
+    -webkit-animation-duration: 1.5s;
+    animation-duration: 1.5s;
+}
+
+.animate__fadeIn {
+    -webkit-animation-name: fadeIn;
+    animation-name: fadeIn;
+}
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+    border-radius: 24px;
+    box-shadow: 0 15px 50px rgba(67, 97, 238, 0.15);
+    margin-top: 20px;
+    margin-bottom: 40px;
+}
+
 
 //顾瑞莹
 /* 2. 卡片设计增强 */
@@ -369,9 +545,8 @@ CSS_STYLE = '''
 }
 </style>
 '''
-**/
-/**
-*第二部分代码请在这里粘贴
+
+
  //顾瑞莹
 def render_analysis_results(results, sentiment_icon):
     """渲染分析结果的HTML模板"""
@@ -572,6 +747,115 @@ def render_analysis_results(results, sentiment_icon):
                              </div>
                          </div>
                      </div>
-//岳璐璐
+                    //岳璐璐
+                   <!-- 关键词内容 -->
+                     <div class="tab-pane fade" id="keywords-content" role="tabpanel">
+                         <div class="card border-0 shadow-sm">
+                             <div class="card-body">
+                                 <div class="d-flex align-items-center mb-3">
+                                     <div class="bg-success-soft rounded p-2 me-3">
+                                         <i class="fas fa-key fa-2x text-success"></i>
+                                     </div>
+                                     <h5 class="mb-0">关键词提取</h5>
+                                 </div>
+                                 <div class="word-cloud bg-white p-4 rounded border">
+                                     {''.join([f'<span class="word-item animate__animated animate__fadeIn" style="animation-delay: {0.1 * i}s">{word}</span>' for i, word in enumerate(text_analysis['keywords'])])}
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
 
-**/
+                     <!-- 词云内容 -->
+                     <div class="tab-pane fade" id="wordcloud-content" role="tabpanel">
+                         {wordcloud_html}
+                     </div>
+
+                     <!-- 句子情感内容 -->
+                     <div class="tab-pane fade" id="sentiment-content" role="tabpanel">
+                         <div class="card border-0 shadow-sm">
+                             <div class="card-body">
+                                 <div class="d-flex align-items-center mb-3">
+                                     <div class="bg-info-soft rounded p-2 me-3">
+                                         <i class="fas fa-comments fa-2x text-info"></i>
+                                     </div>
+                                     <h5 class="mb-0">情感分析</h5>
+                                 </div>
+                                 <div class="mt-3">
+                                     {sentence_sentiments_html}
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+
+             <!-- 原始文本预览 -->
+             <div class="card border-0 shadow-sm">
+                 <div class="card-body">
+                     <div class="d-flex align-items-center mb-3">
+                         <div class="bg-warning-soft rounded p-2 me-3">
+                             <i class="fas fa-file-alt fa-2x text-warning"></i>
+                         </div>
+                         <h5 class="mb-0">原始文本预览</h5>
+                     </div>
+                     <div class="bg-light p-4 rounded border" style="max-height: 300px; overflow-y: auto;">
+                         <p class="mb-0">{results['original_text']}</p>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </div>
+
+     <!-- 词云模态框 -->
+     <div class="modal fade" id="wordCloudModal" tabindex="-1" aria-hidden="true">
+         <div class="modal-dialog modal-lg modal-dialog-centered">
+             <div class="modal-content">
+                 <div class="modal-header bg-primary text-white">
+                     <h5 class="modal-title">
+                         <i class="fas fa-cloud me-2"></i> 词云详情
+                     </h5>
+                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                 </div>
+                 <div class="modal-body text-center p-0">
+                     <img src="data:image/png;base64,{results['text_analysis']['wordcloud_img']}" 
+                          class="img-fluid"
+                          alt="全屏词云图">
+                    
+                 </div>
+                 <div class="modal-footer justify-content-center">
+                     <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">
+                         <i class="fas fa-times me-1"></i> 关闭预览
+                     </button>
+                 </div>
+             </div>
+         </div>
+     </div>
+
+     <script>
+         // 显示词云模态框
+         function showWordCloudModal() {{
+             new bootstrap.Modal(document.getElementById('wordCloudModal')).show();
+         }}
+
+         // 动画控制
+         document.querySelectorAll('.btn-animate').forEach(btn => {{
+             btn.addEventListener('click', function() {{
+                 const animationType = this.dataset.animation;
+                 const wordcloudImg = document.querySelector('#wordcloud-content img');
+
+                 // 移除所有动画类
+                 wordcloudImg.classList.remove('animate-float', 'animate-pulse', 'animate__animated', 
+                                             'animate__pulse', 'animate__shakeX', 'animate__rubberBand');
+
+                 // 添加新动画
+                 if (animationType === 'pulse') {{
+                     wordcloudImg.classList.add('animate-pulse');
+                 }} else if (animationType === 'shake') {{
+                     wordcloudImg.classList.add('animate__animated', 'animate__shakeX');
+                 }} else if (animationType === 'rubberBand') {{
+                     wordcloudImg.classList.add('animate__animated', 'animate__rubberBand');
+                 }}
+             }});
+         }});
+     </script>
+     '''
