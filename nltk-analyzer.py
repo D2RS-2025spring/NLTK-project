@@ -712,14 +712,14 @@ import matplotlib.font_manager as fm
 
 def generate_wordcloud(word_freq):
     # 指定项目内置字体路径（确保将中文字体文件放在项目目录下）
-    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'SimHei.ttf')
+    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'SourceHanSansHWSC-Regular.otf')
     
     # 检查字体文件是否存在
     if not os.path.exists(font_path):
         print("警告：项目内置字体文件不存在，尝试使用系统字体...")
         # 如果没有内置字体，尝试使用系统字体
         system_fonts = [
-            'SimHei',       # Windows/Linux
+            'SourceHanSansHWSC-Regular',       # Windows/Linux
             'WenQuanYi Micro Hei',  # Linux
             'Heiti TC',     # macOS
         ]
@@ -774,7 +774,7 @@ def generate_bar_chart(word_freq, top_n=10):
     
     # 定义备选字体文件列表（按优先级排序）
     font_files = [
-        'SimHei.ttf',      # 黑体
+        'SourceHanSansHWSC-Regular.otf',      # 黑体
         'microsoftyahei.ttf',  # 微软雅黑
         'simfang.ttf',     # 仿宋
         'simsun.ttc',      # 宋体
