@@ -130,3 +130,5 @@ python main/news_analyzer.py
 
 #### 本地部署默认网址: http://127.0.0.1:5000
 
+#### 项目已成功部署，访问链接:https://nltk-project-b7y5.onrender.com/
+
