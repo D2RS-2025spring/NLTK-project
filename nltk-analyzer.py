@@ -703,8 +703,32 @@ merged_sentiment_dict = merge_sentiment_dicts(custom_sentiment_dict, default_sen
 
 # 新增词云生成函数
 def generate_wordcloud(word_freq):
+    # 优先使用项目内置字体
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+    builtin_font = os.path.join(project_dir, 'fonts', 'msyh.ttc')
+    
+    # 可选字体列表 (按优先级)
+    possible_fonts = [
+        builtin_font,  # 1. 项目内置字体 (最高优先级)
+        '/usr/share/fonts/truetype/msttcorefonts/Arial.ttf',  # 2. Linux 常见路径
+        '/Library/Fonts/Arial.ttf',  # 3. macOS 常见路径
+        'C:/Windows/Fonts/msyh.ttc'  # 4. Windows 路径 (最后尝试)
+    ]
+    
+    # 检查可用字体
+    font_path = None
+    for font in possible_fonts:
+        if os.path.exists(font):
+            font_path = font
+            print(f"Using font: {font_path}")
+            break
+    
+    # 如果没有找到任何字体，使用 None (让 wordcloud 尝试使用默认字体)
+    if font_path is None:
+        print("Warning: No suitable font found. Using WordCloud default font.")
+    
     wc = WordCloud(
-        font_path='C:/Windows/Fonts/msyh.ttc',
+        font_path=font_path,
         background_color='white',
         width=800,
         height=400,
@@ -713,6 +737,7 @@ def generate_wordcloud(word_freq):
         max_font_size=150,
         random_state=42
     )
+    
     # 确保使用词频生成
     wc.generate_from_frequencies(word_freq)
 
