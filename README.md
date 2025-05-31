@@ -113,4 +113,15 @@ mindmap
          实时响应
          资源优化
 ```
+## 🚀 快速开始
+
+```bash
+# 克隆仓库
+git clone https://github.com/Gmyue/NLTK-project.git
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行文本分析
+python main/news_analyzer.py
 
