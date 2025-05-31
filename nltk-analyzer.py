@@ -20,8 +20,8 @@ import base64
 
 app = Flask(__name__)
 
-STOPWORDS_PATH = "../data/stopword.txt"#停用词位置
-EXTERNAL_SENTIMENT_DICT_PATH = '../data/emotion.txt'  # 词典路径
+STOPWORDS_PATH = "./data/stopword.txt"#停用词位置
+EXTERNAL_SENTIMENT_DICT_PATH = './data/emotion.txt'  # 词典路径
 
 
 //姚洁
