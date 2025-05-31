@@ -1,0 +1,6 @@
+bs4         0.0.2   
+flask       3.1.0   
+jieba       0.42.1  
+matplotlib  3.10.1  
+requests    2.32.3  
+wordcloud   1.9.4   
