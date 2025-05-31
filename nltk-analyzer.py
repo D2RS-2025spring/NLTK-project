@@ -727,7 +727,7 @@ def generate_wordcloud(word_freq):
     # 如果没有找到任何字体，使用 None (让 wordcloud 尝试使用默认字体)
     if font_path is None:
         print("Warning: No suitable font found. Using WordCloud default font.")
-         try:
+        try:
             # 尝试使用指定字体（如本地开发环境中的微软雅黑）
             font_path = os.path.join(os.path.dirname(__file__), 'fonts/msyh.ttc')
             if os.path.exists(font_path):
@@ -739,9 +739,8 @@ def generate_wordcloud(word_freq):
         except Exception as e:
             # 字体缺失时，降级到内置字体
             print(f"Font not found, falling back to default: {e}")
-            plt.rcParams['font.family'] = ['DejaVu Sans', 'sans-serif']
+            font_path = 'sans-serif'
     
-    plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
     
     
     wc = WordCloud(
