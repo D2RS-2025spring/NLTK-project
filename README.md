@@ -1,5 +1,5 @@
 # NLTK-project
-# 文本智能分析系统项目总结
+# 文本智能分析系统项目
 
 ## 项目名称
 文本智能分析系统（Text Intelligence Analysis System）
@@ -13,6 +13,13 @@
 | 岳璐璐2024303120074 | 架构设计、前端实现|
 
 ## 项目架构
+```
+NLTK-project/
+├── main/                    # 核心代码模块
+├── data/                    # 停用词以及知网HowNet情感词典
+├── docs/                   # 文档
+└── results/                # 结果
+```
 ### 系统分层设计
 ```mermaid
 graph TD
