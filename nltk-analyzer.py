@@ -15,6 +15,7 @@ from wordcloud import WordCloud
 import matplotlib
 matplotlib.use('Agg')  # 在导入pyplot之前设置
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 from io import BytesIO
 import base64
 
