@@ -727,6 +727,22 @@ def generate_wordcloud(word_freq):
     # 如果没有找到任何字体，使用 None (让 wordcloud 尝试使用默认字体)
     if font_path is None:
         print("Warning: No suitable font found. Using WordCloud default font.")
+         try:
+            # 尝试使用指定字体（如本地开发环境中的微软雅黑）
+            font_path = os.path.join(os.path.dirname(__file__), 'fonts/msyh.ttc')
+            if os.path.exists(font_path):
+                font = fm.FontProperties(fname=font_path)
+                plt.rcParams['font.family'] = font.get_name()
+            else:
+                raise FileNotFoundError("Font file not found")
+                
+        except Exception as e:
+            # 字体缺失时，降级到内置字体
+            print(f"Font not found, falling back to default: {e}")
+            plt.rcParams['font.family'] = ['DejaVu Sans', 'sans-serif']
+    
+    plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+    
     
     wc = WordCloud(
         font_path=font_path,
@@ -755,8 +771,20 @@ def generate_wordcloud(word_freq):
 
 def generate_bar_chart(word_freq, top_n=10):
     """生成词频统计柱状图"""
-    plt.rcParams['font.family'] = 'Microsoft YaHei'  # 微软雅黑（Windows）
-    # 或 plt.rcParams['font.sans-serif'] = ['SimHei']  # 黑体（推荐跨平台方案）
+     try:
+        # 尝试使用指定字体（如本地开发环境中的微软雅黑）
+        font_path = os.path.join(os.path.dirname(__file__), 'fonts/msyh.ttc')
+        if os.path.exists(font_path):
+            font = fm.FontProperties(fname=font_path)
+            plt.rcParams['font.family'] = font.get_name()
+        else:
+            raise FileNotFoundError("Font file not found")
+            
+    except Exception as e:
+        # 字体缺失时，降级到内置字体
+        print(f"Font not found, falling back to default: {e}")
+        plt.rcParams['font.family'] = ['DejaVu Sans', 'sans-serif']
+    
     plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 
     # 提取前n个高频词
