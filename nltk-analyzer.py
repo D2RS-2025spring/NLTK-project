@@ -712,7 +712,7 @@ import matplotlib.font_manager as fm
 
 def generate_wordcloud(word_freq):
     # 指定项目内置字体路径（确保将中文字体文件放在项目目录下）
-    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'simhei.ttf')
+    font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'SimHei.ttf')
     
     # 检查字体文件是否存在
     if not os.path.exists(font_path):
@@ -768,11 +768,54 @@ def generate_wordcloud(word_freq):
     return img_base64
     
 def generate_bar_chart(word_freq, top_n=10):
-    """生成词频统计柱状图"""
-    # 配置中文字体支持
-    plt.rcParams["font.family"] = ["SimHei", "WenQuanYi Micro Hei", 
-                                  "Heiti TC", "Microsoft YaHei", "sans-serif"]
-    plt.rcParams["axes.unicode_minus"] = False  # 确保负号正确显示
+    """生成词频统计柱状图（使用导入字体）"""
+    # 设置项目字体目录路径
+    font_dir = os.path.join(os.path.dirname(__file__), 'fonts')
+    
+    # 定义备选字体文件列表（按优先级排序）
+    font_files = [
+        'SimHei.ttf',      # 黑体
+        'microsoftyahei.ttf',  # 微软雅黑
+        'simfang.ttf',     # 仿宋
+        'simsun.ttc',      # 宋体
+    ]
+    
+    # 尝试加载项目内字体
+    font_path = None
+    for font_file in font_files:
+        full_path = os.path.join(font_dir, font_file)
+        if os.path.exists(full_path):
+            try:
+                # 注册字体
+                fm.fontManager.addfont(full_path)
+                font_name = fm.FontProperties(fname=full_path).get_name()
+                font_path = full_path
+                print(f"成功加载字体: {font_name} ({full_path})")
+                break
+            except Exception as e:
+                print(f"字体 {full_path} 加载失败: {str(e)}")
+    
+    # 如果未找到项目字体，回退到系统字体
+    if not font_path:
+        print("警告：未找到项目字体，尝试使用系统字体...")
+        system_fonts = ['SimHei', 'WenQuanYi Micro Hei', 'Heiti TC', 'Microsoft YaHei']
+        available_fonts = {f.name for f in fm.fontManager.ttflist}
+        
+        for font in system_fonts:
+            if font in available_fonts:
+                plt.rcParams['font.family'] = font
+                print(f"使用系统字体: {font}")
+                break
+        else:
+            # 如果没有找到任何中文字体，使用默认设置
+            print("警告：未找到任何中文字体，使用默认字体（可能无法正确显示中文）")
+            plt.rcParams['font.family'] = ['sans-serif']
+    else:
+        # 使用加载的项目字体
+        font_name = fm.FontProperties(fname=font_path).get_name()
+        plt.rcParams['font.family'] = font_name
+    
+    plt.rcParams['axes.unicode_minus'] = False  # 确保负号正确显示
     
     # 提取前n个高频词
     top_words = word_freq.most_common(top_n)
@@ -808,7 +851,6 @@ def generate_bar_chart(word_freq, top_n=10):
     plt.close()
     
     return img_base64
-
 # 增强的文本分析功能
 def advanced_text_analysis(text):
     """对文本进行多维度分析"""
