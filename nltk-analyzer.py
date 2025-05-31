@@ -23,8 +23,6 @@ app = Flask(__name__)
 STOPWORDS_PATH = "./data/stopword.txt"#停用词位置
 EXTERNAL_SENTIMENT_DICT_PATH = './data/emotion.txt'  # 词典路径
 
-
-//姚洁
 # 全局样式定义
 CSS_STYLE = '''
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -206,7 +204,7 @@ CSS_STYLE = '''
         border-radius: 0 12px 12px 0;
         transition: all 0.3s ease;
     }
-//岳璐璐
+
     .result-item:hover {
         background: rgba(67, 97, 238, 0.07);
         transform: translateX(5px);
@@ -386,7 +384,7 @@ CSS_STYLE = '''
 }
 
 
-//顾瑞莹
+
 /* 2. 卡片设计增强 */
 .card {
     border-radius: 20px;
@@ -1085,7 +1083,6 @@ def index():
     ''')
 
 
- //顾瑞莹
 def render_analysis_results(results, sentiment_icon):
     """渲染分析结果的HTML模板"""
     if not results:
@@ -1190,7 +1187,7 @@ def render_analysis_results(results, sentiment_icon):
                     </div>
                 </div>
             </div>
-//姚洁
+
            <div class="col-md-4">
                 <div class="result-card h-100">
                     <div class="card-body text-center p-4">
@@ -1291,7 +1288,7 @@ def render_analysis_results(results, sentiment_icon):
                              </div>
                          </div>
                      </div>
-                    //岳璐璐
+                    
                    <!-- 关键词内容 -->
                      <div class="tab-pane fade" id="keywords-content" role="tabpanel">
                          <div class="card border-0 shadow-sm">
