@@ -715,6 +715,7 @@ def generate_wordcloud(word_freq):
         'C:/Windows/Fonts/msyh.ttc',                     # Windows 微软雅黑
         
         # 3. 通用无衬线字体（英文 fallback）
+        'Source Han Sans',
         'DejaVu Sans',
         'Liberation Sans',
         'Arial'
@@ -768,7 +769,7 @@ def generate_wordcloud(word_freq):
 def generate_bar_chart(word_freq, top_n=10):
     """生成词频统计柱状图"""
     # 定义备选字体列表（按优先级排序）
-    preferred_fonts = ['Microsoft YaHei', 'SimHei', 'WenQuanYi Micro Hei', 'Heiti TC']
+    preferred_fonts = ['Microsoft YaHei', 'SimHei', 'WenQuanYi Micro Hei', 'Heiti TC'，'Source Han Sans']
     
     # 获取系统所有可用字体
     available_fonts = {f.name for f in fm.fontManager.ttflist}
